@@ -29,6 +29,9 @@ Station = Base.classes.station
 app = Flask(__name__)
 
 # Setup routes
+
+# welcome route listing all available routes
+
 @app.route("/")
 def welcome():
     return(
@@ -41,6 +44,8 @@ def welcome():
         f"/api/v1.0/<start>/<end>"
     )
 
+# precipitation route
+
 @app.route("/api/v1.0/precipitation")
 def precipitation():
 
@@ -52,6 +57,8 @@ def precipitation():
     # dict reference - https://medium.com/analytics-vidhya/python-dictionary-and-json-a-comprehensive-guide-ceed58a3e2ed
     precip = {date: prcp for date, prcp in last_year_prcp}
     return jsonify(precip)
+
+# stations route
 
 @app.route("/api/v1.0/stations")
 def stations():
@@ -74,6 +81,24 @@ def stations():
     #     stations_all.append(station_dict)
 
     return jsonify(stations_all)
+
+@app.route("/api/v1.0/tobs")
+def tobs():
+    
+    session = Session(engine)
+
+    one_year_ago = dt.date(2017, 8, 23) - dt.timedelta(days=365)
+
+    # Query the primary station for all tobs from the last year
+    results = session.query(Measurement.tobs).\
+        filter(Measurement.station == 'USC00519281').\
+        filter(Measurement.date >= one_year_ago).all()
+
+    # Convert list of tuples into normal list
+    temps = list(np.ravel(results))
+
+    # Return the results
+    return jsonify(temps)
 
 if __name__ == '__main__':
     app.run(debug=True)
