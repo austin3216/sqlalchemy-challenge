@@ -58,15 +58,20 @@ def stations():
 
     session = Session(engine)
 
-    results = session.query(Station.station, Station.name).all()
+    results = session.query(Station.station).all()
 
-    stations_all = []
+    # Convert list of tuples into normal list
+    stations_all = list(np.ravel(results))
 
-    for station, name, in results:
-        station_dict = {}
-        station_dict['station'] = station
-        station_dict['name'] = name
-        stations_all.append(station_dict)
+    # results = session.query(Station.station, Station.name).all()
+
+    # stations_all = []
+
+    # for station, name, in results:
+    #     station_dict = {}
+    #     station_dict['station'] = station
+    #     station_dict['name'] = name
+    #     stations_all.append(station_dict)
 
     return jsonify(stations_all)
 
