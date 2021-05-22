@@ -40,8 +40,7 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
-        f"/api/v1.0/<start><br>"
-        f"/api/v1.0/<start>/<end>"
+        f"/api/v1.0/temp/start/end"
     )
 
 # precipitation route
@@ -99,6 +98,24 @@ def tobs():
 
     # Return the results
     return jsonify(temps)
+
+# start / end route
+
+@app.route("/api/v1.0/temp/<start>")
+@app.route("/api/v1.0/temp/<start>/<end>")
+def measures(start=None, end=None):
+
+    session = Session(engine)
+
+    # define select statement to calculate min, avg, and max
+    sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
+
+    if not end:
+        results = session.query(*sel).filter(Measurement.date >= start).all()
+        temps = list(np.ravel(results))
+        return jsonify(temps)
+
+    
 
 if __name__ == '__main__':
     app.run(debug=True)
