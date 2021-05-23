@@ -25,6 +25,9 @@ Base.prepare(engine, reflect=True)
 Measurement = Base.classes.measurement
 Station = Base.classes.station
 
+#Create session
+session = Session(engine)
+
 # Setup Flask app
 app = Flask(__name__)
 
@@ -40,6 +43,7 @@ def welcome():
         f"/api/v1.0/precipitation<br/>"
         f"/api/v1.0/stations<br/>"
         f"/api/v1.0/tobs<br/>"
+        f"/api/v1.0/temp/start</br>"
         f"/api/v1.0/temp/start/end"
     )
 
@@ -47,8 +51,6 @@ def welcome():
 
 @app.route("/api/v1.0/precipitation")
 def precipitation():
-
-    session = Session(engine)
 
     one_year_ago = dt.date(2017, 8, 23) - dt.timedelta(days=365)
     last_year_prcp = session.query(Measurement.date, Measurement.prcp).filter(Measurement.date >= one_year_ago).order_by(Measurement.date.desc()).all()
@@ -62,29 +64,15 @@ def precipitation():
 @app.route("/api/v1.0/stations")
 def stations():
 
-    session = Session(engine)
-
     results = session.query(Station.station).all()
 
     # Convert list of tuples into normal list
     stations_all = list(np.ravel(results))
-
-    # results = session.query(Station.station, Station.name).all()
-
-    # stations_all = []
-
-    # for station, name, in results:
-    #     station_dict = {}
-    #     station_dict['station'] = station
-    #     station_dict['name'] = name
-    #     stations_all.append(station_dict)
-
+    
     return jsonify(stations_all)
 
 @app.route("/api/v1.0/tobs")
 def tobs():
-    
-    session = Session(engine)
 
     one_year_ago = dt.date(2017, 8, 23) - dt.timedelta(days=365)
 
@@ -96,26 +84,33 @@ def tobs():
     # Convert list of tuples into normal list
     temps = list(np.ravel(results))
 
-    # Return the results
     return jsonify(temps)
 
-# start / end route
+# start and start/end routes
 
 @app.route("/api/v1.0/temp/<start>")
 @app.route("/api/v1.0/temp/<start>/<end>")
 def measures(start=None, end=None):
 
-    session = Session(engine)
-
-    # define select statement to calculate min, avg, and max
+    # define select statement for min, avg, max
     sel = [func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)]
 
     if not end:
+        # calculate min, avg, max for dates greater than start
         results = session.query(*sel).filter(Measurement.date >= start).all()
-        temps = list(np.ravel(results))
-        return jsonify(temps)
+        
+        # Unravel results 
+        stats = list(np.ravel(results))
+        return jsonify(stats)
 
-    
+    else:
+
+        # calculate min, avg, max betwee start and stop dates
+        results = session.query(*sel).filter(Measurement.date >= start).filter(Measurement.date <= end).all()
+        
+        # Unravel results
+        stats = list(np.ravel(results))
+        return jsonify(stats)
 
 if __name__ == '__main__':
     app.run(debug=True)
